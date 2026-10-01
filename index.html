@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FruisMeteo — Estação Meteorológica & Sistema</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#F4F0EA; --surface:#FDFAF5; --s2:#EDE9E1; --s3:#E5E0D8;
+  --text:#1A1612; --t2:#7A6F62; --t3:#B0A497;
+  --accent:#B8874E; --al:#F0E4CF; --ad:#7A5730;
+  --border:rgba(26,22,18,0.09); --borderS:rgba(26,22,18,0.18);
+  --ok:#3D6B3E; --okBg:#DFF0DF;
+  --warn:#7A5A10; --warnBg:#F0E8CE;
+  --danger:#8C3A2A; --dangerBg:#F0DADA;
+  --purple:#5A3A8C; --purpleBg:#E8DFDF;
+  --blue:#2A6B8C; --blueBg:#DCEEF5;
+  --font:'Syne',sans-serif; --mono:'DM Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5;}
+
+/* TOPBAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:11px 26px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200;}
+.topbar-left{display:flex;align-items:center;gap:16px;}
+.logo{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;}
+.logo svg{width:19px;height:19px;opacity:.75;}
+.sta-meta{font-family:var(--mono);font-size:10px;color:var(--t3);letter-spacing:.04em;}
+.topbar-right{display:flex;align-items:center;gap:14px;}
+.live-badge{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;color:var(--t2);letter-spacing:.06em;}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--ok);animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.8)}}
+.clock{font-family:var(--mono);font-size:13px;font-weight:500;}
+.tbtn{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:7px;background:none;border:1px solid var(--border);cursor:pointer;color:var(--t2);transition:border-color .2s,background .2s,color .2s;}
+.tbtn:hover{border-color:var(--borderS);background:var(--s2);color:var(--text);}
+.tbtn.active{background:var(--al);border-color:var(--accent);color:var(--ad);}
+.tbtn svg{width:15px;height:15px;}
+
+/* TABS NAV */
+.tabs-wrap{background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:55px;z-index:199;}
+.tabs{display:flex;max-width:1160px;margin:0 auto;padding:0 26px;gap:24px;overflow-x:auto;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab-btn{background:none;border:none;font-family:var(--font);font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);padding:14px 0;cursor:pointer;border-bottom:2px solid transparent;transition:color .2s,border-color .2s;white-space:nowrap;}
+.tab-btn:hover{color:var(--text);}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+/* ALERT */
+.alert-strip{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 16px;background:var(--warnBg);border-bottom:1px solid rgba(184,135,78,.2);font-size:12px;color:var(--warn);}
+.alert-strip-l{display:flex;align-items:center;gap:7px;}
+.alert-strip svg{width:13px;height:13px;flex-shrink:0;}
+.adismiss{display:flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:4px;border:none;background:none;cursor:pointer;color:var(--warn);opacity:.55;transition:opacity .2s;}
+.adismiss:hover{opacity:1;}
+.adismiss svg{width:11px;height:11px;}
+
+/* MAIN */
+.main{max-width:1160px;margin:0 auto;padding:24px 20px 56px;}
+.page-content{display:none;}
+.page-content.active{display:block;animation:fadeUp .4s ease both;}
+@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* HERO */
+.hero{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+.hero-temp{background:var(--surface);border:1px solid var(--border);border-radius:15px;padding:26px 30px;display:flex;flex-direction:column;justify-content:space-between;min-height:200px;position:relative;overflow:hidden;cursor:pointer;transition:border-color .2s;}
+.hero-temp:hover{border-color:var(--borderS);}
+.hero-temp::before{content:'';position:absolute;top:-34px;right:-34px;width:140px;height:140px;border-radius:50%;border:1px solid var(--border);pointer-events:none;}
+.hero-temp::after{content:'';position:absolute;top:-7px;right:-7px;width:86px;height:86px;border-radius:50%;border:1px solid var(--border);pointer-events:none;}
+.t-label{font-size:10px;font-weight:600;letter-spacing:.13em;text-transform:uppercase;color:var(--t2);}
+.t-value{display:flex;align-items:flex-start;gap:3px;line-height:1;margin:5px 0;}
+.t-num{font-family:var(--mono);font-size:80px;font-weight:300;letter-spacing:-4px;}
+.t-unit{font-family:var(--mono);font-size:24px;font-weight:300;color:var(--t2);margin-top:10px;}
+.t-feels{font-family:var(--mono);font-size:11px;color:var(--t2);}
+.t-range{display:flex;gap:13px;margin-top:4px;}
+.t-range span{font-family:var(--mono);font-size:11px;color:var(--t2);}
+.t-range strong{color:var(--text);}
+.cond-icon{position:absolute;right:30px;top:26px;width:46px;height:46px;opacity:.14;}
+.hero-sum{background:var(--surface);border:1px solid var(--border);border-radius:15px;padding:20px 26px;display:flex;flex-direction:column;}
+.sum-title{font-size:10px;font-weight:600;letter-spacing:.13em;text-transform:uppercase;color:var(--t2);margin-bottom:12px;}
+.sum-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;margin:0 -5px;padding-left:5px;padding-right:5px;border-radius:5px;}
+.sum-row:last-child{border-bottom:none;}
+.sum-row:hover{background:var(--s2);}
+.sum-key{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--t2);}
+.sum-key svg{width:13px;height:13px;opacity:.55;}
+.sum-val{font-family:var(--mono);font-size:13px;font-weight:500;}
+.sum-val small{font-size:10px;color:var(--t2);font-weight:300;}
+
+/* SECTION HEAD */
+.sec-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;margin-top:24px;}
+.sec-head h2{font-size:10px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--t2);white-space:nowrap;}
+.sec-head::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* METRIC CARDS */
+.mgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:16px;}
+.mcard{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:16px 18px;cursor:pointer;transition:border-color .2s,transform .15s;display:flex;flex-direction:column;}
+.mcard:hover{border-color:var(--borderS);transform:translateY(-1px);}
+.mcard:active{transform:none;}
+.micon{width:17px;height:17px;margin-bottom:12px;opacity:.38;}
+.mlabel{font-size:9px;font-weight:600;letter-spacing:.13em;text-transform:uppercase;color:var(--t3);margin-bottom:4px;}
+.mval{font-family:var(--mono);font-size:23px;font-weight:400;color:var(--text);line-height:1;letter-spacing:-.5px;}
+.munit{font-size:10px;font-weight:300;color:var(--t2);margin-left:1px;}
+.msub{font-family:var(--mono);font-size:10px;color:var(--t2);margin-top:6px;}
+.mbar{height:2px;background:var(--s2);border-radius:99px;margin-top:9px;overflow:hidden;flex-shrink:0;}
+.mbar-f{height:100%;background:var(--accent);border-radius:99px;transition:width 1s ease, background-color 0.5s ease;}
+
+/* BADGES */
+.badge{display:inline-block;font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;border-radius:4px;margin-top:6px;width:fit-content;}
+.b-ok{background:var(--okBg);color:var(--ok);}
+.b-w{background:var(--warnBg);color:var(--warn);}
+.b-d{background:var(--dangerBg);color:var(--danger);}
+.b-p{background:var(--purpleBg);color:var(--purple);}
+.b-bl{background:var(--blueBg);color:var(--blue);}
+
+/* CHARTS */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px;}
+.ccart{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:18px 22px;display:flex;flex-direction:column;}
+.chead{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.ctitle{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--t2);}
+.legend{display:flex;gap:12px;}
+.leg-i{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--t2);font-family:var(--mono);}
+.leg-d{width:6px;height:6px;border-radius:50%;}
+canvas{width:100%!important;max-height:130px;margin-top:auto;}
+
+/* AGRO / CULTURAS / INDICES */
+.agrid, .c-grid, .i-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:16px;}
+.acard{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:11px;padding:16px 18px;cursor:pointer;transition:transform .15s,border-color .2s;}
+.acard:hover{transform:translateY(-1px);}
+
+.crop-card{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:16px 18px;display:flex;flex-direction:column;transition:border-color .2s;}
+.crop-card:hover{border-color:var(--borderS);}
+.crop-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.crop-name{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text);}
+.crop-stats{font-family:var(--mono);font-size:10px;color:var(--t2);margin-bottom:12px;display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.crop-stats span{display:block;margin-bottom:4px;}
+.crop-stats strong{font-weight:500;color:var(--text);}
+.crop-act{margin-top:auto;padding-top:10px;border-top:1px dashed var(--border);font-size:10px;color:var(--t2);line-height:1.4;}
+
+.idx-card{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:16px 18px;display:flex;flex-direction:column;transition:border-color .2s;}
+.idx-card:hover{border-color:var(--borderS);}
+.idx-name{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--t2);margin-bottom:8px;}
+.idx-val{font-family:var(--font);font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px;display:flex;align-items:center;gap:6px;}
+.idx-desc{font-size:10px;color:var(--t2);line-height:1.4;margin-top:auto;font-family:var(--mono);}
+
+/* FORECAST & HOURLY */
+.fgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:16px;}
+.fday{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:12px 8px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;}
+.fday.today{background:var(--al);border-color:var(--accent);}
+.fday:hover{border-color:var(--borderS);}
+.fdow{font-size:9px;font-weight:600;letter-spacing:.10em;text-transform:uppercase;color:var(--t2);margin-bottom:7px;}
+.ficon{width:20px;height:20px;margin:0 auto 7px;opacity:.45;}
+.fhi{font-family:var(--mono);font-size:13px;font-weight:500;}
+.flo{font-family:var(--mono);font-size:11px;color:var(--t2);margin-top:2px;}
+.frbar{height:2px;background:var(--s2);border-radius:99px;margin-top:7px;overflow:hidden;}
+.frfill{height:100%;background:var(--t3);border-radius:99px;}
+.fpct{font-family:var(--mono);font-size:9px;color:var(--t3);margin-top:3px;}
+
+.hgrid { display:flex; gap:8px; overflow-x:auto; padding-bottom:8px; margin-bottom:16px; }
+.hgrid::-webkit-scrollbar { display:none; }
+.hday { flex: 1; background:var(--surface); border:1px solid var(--border); border-radius:11px; padding:16px 8px; text-align:center; transition:border-color .2s, transform .15s; }
+.hday:hover { border-color:var(--borderS); transform: translateY(-1px); }
+.hday.now { background:var(--al); border-color:var(--accent); }
+
+/* WIDGET WRAP */
+.ww{transition:opacity .3s,transform .3s;overflow:hidden;}
+.ww.hidden{opacity:0;max-height:0!important;pointer-events:none;transform:translateY(-6px);margin-top:0!important;margin-bottom:0!important;}
+
+/* CUSTOMIZE PANEL */
+.povl{position:fixed;inset:0;background:rgba(26,22,18,.22);z-index:300;opacity:0;pointer-events:none;transition:opacity .25s;}
+.povl.open{opacity:1;pointer-events:all;}
+.cpanel{position:fixed;top:0;right:0;bottom:0;width:310px;background:var(--surface);border-left:1px solid var(--border);z-index:301;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;box-shadow:-10px 0 40px rgba(26,22,18,.07);}
+.cpanel.open{transform:translateX(0);}
+.cp-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);}
+.cp-head h3{font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;}
+.cp-close{width:28px;height:28px;display:flex;align-items:center;justify-content:center;background:none;border:1px solid var(--border);border-radius:6px;cursor:pointer;color:var(--t2);transition:background .2s;}
+.cp-close:hover{background:var(--s2);}
+.cp-close svg{width:13px;height:13px;}
+.cp-body{flex:1;overflow-y:auto;padding:14px 20px;}
+.cp-sect{font-size:9px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--t3);margin:20px 0 8px;}
+.cp-sect:first-child{margin-top:2px;}
+.tog-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);}
+.tog-row:last-child{border-bottom:none;}
+.tog-name{font-size:13px;color:var(--text);}
+.tog-sw{position:relative;width:34px;height:19px;cursor:pointer;}
+.tog-sw input{opacity:0;width:0;height:0;position:absolute;}
+.tog-tr{position:absolute;inset:0;background:var(--s3);border-radius:99px;transition:background .2s;}
+.tog-sw input:checked+.tog-tr{background:var(--accent);}
+.tog-kn{position:absolute;top:2.5px;left:2.5px;width:14px;height:14px;background:white;border-radius:50%;transition:left .2s;}
+.tog-sw input:checked~.tog-kn{left:17.5px;}
+.cp-foot{padding:12px 20px;border-top:1px solid var(--border);}
+.cp-rst{width:100%;padding:8px;border-radius:7px;background:var(--s2);border:1px solid var(--border);font-family:var(--font);font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;color:var(--t2);transition:background .2s;}
+.cp-rst:hover{background:var(--s3);}
+
+/* DETAIL MODAL */
+.movl{position:fixed;inset:0;background:rgba(26,22,18,.28);z-index:400;opacity:0;pointer-events:none;transition:opacity .2s;display:flex;align-items:center;justify-content:center;}
+.movl.open{opacity:1;pointer-events:all;}
+.dmod{background:var(--surface);border:1px solid var(--border);border-radius:15px;width:370px;max-width:94vw;transform:translateY(10px) scale(.97);transition:transform .25s cubic-bezier(.4,0,.2,1);box-shadow:0 18px 56px rgba(26,22,18,.13);}
+.movl.open .dmod{transform:none;}
+.mhead{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);}
+.mhead h4{font-size:11px;font-weight:600;letter-spacing:.10em;text-transform:uppercase;color:var(--t2);}
+.mclose{width:24px;height:24px;border:1px solid var(--border);border-radius:5px;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--t2);transition:background .2s;}
+.mclose:hover{background:var(--s2);}
+.mclose svg{width:11px;height:11px;}
+.mbody{padding:18px;}
+.mbig{font-family:var(--mono);font-size:50px;font-weight:300;line-height:1;letter-spacing:-2px;}
+.mbig-u{font-family:var(--mono);font-size:17px;color:var(--t2);}
+.mrows{margin-top:14px;}
+.mrow{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px;}
+.mrow:last-child{border-bottom:none;}
+.mrow-k{color:var(--t2);}
+.mrow-v{font-family:var(--mono);font-weight:500;}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .hero,.two-col{grid-template-columns:1fr;}
+  .mgrid,.agrid,.c-grid,.i-grid{grid-template-columns:repeat(2,1fr);}
+  .fgrid{grid-template-columns:repeat(4,1fr);}
+  .cpanel{width:100%;}
+  .hgrid { overflow-x: auto; flex-wrap: nowrap; }
+  .hday { flex: 0 0 75px; }
+}
+@media(max-width:600px){
+  .three-col,.c-grid,.i-grid{grid-template-columns:1fr;}
+  .t-num{font-size:62px;}
+  .sta-meta{display:none;}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-left">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+      FruisMeteo
+    </div>
+    <div class="sta-meta">EST. STA-01 · FAZENDA CÓRREGO BREJINHO · 19°17'03.89"S 44°21'07.88"W · 769m</div>
+  </div>
+  <div class="topbar-right">
+    <div class="live-badge"><div class="live-dot"></div>AO VIVO</div>
+    <div class="clock" id="clock">--:--:--</div>
+    <button class="tbtn" id="btnC" title="Personalizar quadros" onclick="openPanel()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="tabs-wrap">
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('p-meteo', this)">Meteorologia</button>
+    <button class="tab-btn" onclick="switchTab('p-24h', this)">Previsão 24h</button>
+    <button class="tab-btn" onclick="switchTab('p-culturas', this)">Culturas</button>
+    <button class="tab-btn" onclick="switchTab('p-indices', this)">Índices e Saúde</button>
+    <button class="tab-btn" onclick="switchTab('p-hw', this)">Sistema & Hardware</button>
+  </div>
+</div>
+
+<div class="alert-strip" id="alertStrip">
+  <div class="alert-strip-l">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <strong>Atenção:</strong>&nbsp;Umidade do ar abaixo de 40% — risco de estresse hídrico. Considerar irrigação.
+  </div>
+  <button class="adismiss" onclick="document.getElementById('alertStrip').style.display='none'">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </button>
+</div>
+
+<main class="main">
+
+<div id="p-meteo" class="page-content active">
+  <div class="hero ww" id="w-hero" style="max-height:600px;">
+    <div class="hero-temp fi" onclick="openModal('temp')">
+      <div>
+        <div class="t-label">Temperatura do Ar</div>
+        <div class="t-value"><span class="t-num" id="tempVal">28</span><span class="t-unit">°C</span></div>
+        <div class="t-feels">Sensação térmica: <span id="feelsLike">31°C</span></div>
+      </div>
+      <svg class="cond-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+      <div class="t-range">
+        <span>Mín <strong id="tMin">18°C</strong></span>
+        <span>Máx <strong id="tMax">32°C</strong></span>
+        <span>Média 7d: <strong>24°C</strong></span>
+      </div>
+    </div>
+    <div class="hero-sum fi">
+      <div class="sum-title">Condições Atuais</div>
+      <div class="sum-row" onclick="openModal('hum')">
+        <div class="sum-key"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 22a6 6 0 006-6c0-4-6-14-6-14S6 12 6 16a6 6 0 006 6z"/></svg>Umidade</div>
+        <div class="sum-val"><span id="humVal">38</span><small> %</small></div>
+      </div>
+      <div class="sum-row" onclick="openModal('wind')">
+        <div class="sum-key"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17.7 7.7a2.5 2.5 0 111.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1111 8H2"/><path d="M12.6 19.4A2 2 0 1014 16H2"/></svg>Vento</div>
+        <div class="sum-val"><span id="windVal">14</span><small> km/h · <span id="windDir">NE</span></small></div>
+      </div>
+      <div class="sum-row" onclick="openModal('press')">
+        <div class="sum-key"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2z"/><path d="M12 6v6l4 2"/></svg>Pressão</div>
+        <div class="sum-val"><span id="pressVal">1013</span><small> hPa</small></div>
+      </div>
+      <div class="sum-row" onclick="openModal('uv')">
+        <div class="sum-key"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>Índice UV</div>
+        <div class="sum-val"><span id="uvVal">8</span><small> / 11</small></div>
+      </div>
+      <div class="sum-row" onclick="openModal('rain')">
+        <div class="sum-key"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 17.58A5 5 0 0018 8h-1.26A8 8 0 104 16.25"/><line x1="8" y1="19" x2="8" y2="21"/><line x1="8" y1="13" x2="8" y2="15"/><line x1="16" y1="19" x2="16" y2="21"/><line x1="16" y1="13" x2="16" y2="15"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="12" y1="15" x2="12" y2="17"/></svg>Chuva Hoje</div>
+        <div class="sum-val"><span id="rainToday">0.0</span><small> mm</small></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ww" id="w-metrics" style="max-height:600px;">
+    <div class="sec-head"><h2>Meteorologia</h2></div>
+    <div class="mgrid">
+      <div class="mcard fi" onclick="openModal('hum')">
+        <svg class="micon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 22a6 6 0 006-6c0-4-6-14-6-14S6 12 6 16a6 6 0 006 6z"/></svg>
+        <div class="mlabel">Umidade Relativa</div>
+        <div class="mval" id="m-hum">38<span class="munit">%</span></div>
+        <div class="mbar"><div class="mbar-f" id="bar-hum" style="width:38%; background:var(--danger)"></div></div>
+        <div class="msub">Orvalho: <span id="dewPoint">13°C</span></div>
+        <span class="badge b-d" id="bdg-hum">Crítico</span>
+      </div>
+      <div class="mcard fi" onclick="openModal('wind')">
+        <svg class="micon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17.7 7.7a2.5 2.5 0 111.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1111 8H2"/><path d="M12.6 19.4A2 2 0 1014 16H2"/></svg>
+        <div class="mlabel">Vento</div>
+        <div class="mval" id="m-wind">14<span class="munit">km/h</span></div>
+        <div class="mbar"><div class="mbar-f" id="bar-wind" style="width:28%; background:var(--ok)"></div></div>
+        <div class="msub">Rajada: <span id="gustVal">22</span> km/h</div>
+        <span class="badge b-ok">Normal</span>
+      </div>
+      <div class="mcard fi" onclick="openModal('press')">
+        <svg class="micon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2z"/><circle cx="12" cy="12" r="3"/></svg>
+        <div class="mlabel">Pressão Atmosférica</div>
+        <div class="mval" id="m-press">1013<span class="munit">hPa</span></div>
+        <div class="mbar"><div class="mbar-f" id="bar-press" style="width:62%"></div></div>
+        <div class="msub">Déficit Press. Vapor (VPD): <span id="vpdVal">2.3</span> kPa</div>
+        <span class="badge b-ok">Estável</span>
+      </div>
+      <div class="mcard fi" onclick="openModal('uv')">
+        <svg class="micon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+        <div class="mlabel">Índice UV / Solar</div>
+        <div class="mval" id="m-uv">8<span class="munit">/ 11</span></div>
+        <div class="mbar"><div class="mbar-f" id="bar-uv" style="width:73%; background:var(--warn)"></div></div>
+        <div class="msub">Rad: <span id="radVal">680</span> W/m²</div>
+        <span class="badge b-w" id="bdg-uv">Alto</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="ww" id="w-charts" style="max-height:400px;">
+    <div class="two-col" style="margin-bottom:16px;">
+      <div class="ccart">
+        <div class="chead">
+          <span class="ctitle">Temperatura e Orvalho — 24h</span>
+          <div class="legend">
+            <div class="leg-i"><div class="leg-d" style="background:var(--accent)"></div>Temp</div>
+            <div class="leg-i"><div class="leg-d" style="background:var(--t3)"></div>Orvalho</div>
+          </div>
+        </div>
+        <canvas id="tempChart" height="130"></canvas>
+      </div>
+      <div class="ccart">
+        <div class="chead"><span class="ctitle">Precipitação — 7 Dias</span></div>
+        <div style="display:flex;align-items:flex-end;height:100px;gap:5px;" id="rainBars"></div>
+        <div style="display:flex;justify-content:space-between;margin-top:auto;font-family:var(--mono);font-size:9px;color:var(--t3);" id="rainLabels"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ww" id="w-agro" style="max-height:600px;">
+    <div class="sec-head"><h2>Dados Agronômicos</h2></div>
+    <div class="agrid">
+      <div class="acard fi" id="w-soil-temp" onclick="openModal('soilTemp')">
+        <svg class="micon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M14 14.76V3.5a2.5 2.5 0 00-5 0v11.26a4.5 4.5 0 105 0z"/></svg>
+        <div class="mlabel">Temp. do Solo</div>
+        <div class="mval">24<span class="munit">°C</span></div>
+        <div class="msub">a 10 cm de prof.</div>
+        <div class="mbar" style="margin-top:9px;"><div class="mbar-f" style="width:60%; background:var(--ok)"></div></div>
+      </div>
+      <div class="acard fi" id="w-soil-moisture" onclick="openModal('soilMoist')">
+        <svg class="micon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 22a6 6 0 006-6c0-4-6-14-6-14S6 12 6 16a6 6 0 006 6z"/></svg>
+        <div class="mlabel">Umidade do Solo</div>
+        <div class="mval">42<span class="munit">%</span></div>
+        <div class="msub">Estado: Úmido</div>
+        <div class="mbar" style="margin-top:9px;"><div class="mbar-f" style="width:42%; background:var(--blue)"></div></div>
+      </div>
+      <div class="acard fi" id="w-eto" onclick="openModal('eto')">
+        <svg class="micon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z"/></svg>
+        <div class="mlabel">Evapotranspiração</div>
+        <div class="mval">5.2<span class="munit">mm/d</span></div>
+        <div class="msub">Água perdida por dia</div>
+        <div class="mbar" style="margin-top:9px;"><div class="mbar-f" style="width:65%"></div></div>
+      </div>
+      <div class="acard fi" id="w-gda" onclick="openModal('gda')">
+        <svg class="micon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <div class="mlabel">Graus-Dia Acum.</div>
+        <div class="mval">842<span class="munit">GDA</span></div>
+        <div class="msub">Soja Safra 24/25</div>
+        <div class="mbar" style="margin-top:9px;"><div class="mbar-f" style="width:55%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ww" id="w-forecast" style="max-height:400px;">
+    <div class="sec-head"><h2>Previsão — 7 Dias</h2></div>
+    <div class="fgrid" id="forecastGrid"></div>
+  </div>
+
+  <div class="ww" id="w-extras" style="max-height:300px;">
+    <div class="three-col" style="margin-bottom:16px;">
+      <div class="mcard fi" id="w-visibility">
+        <div class="mlabel">Visibilidade</div>
+        <div class="mval">10<span class="munit">km</span></div>
+        <div class="msub">Condição: Excelente</div>
+      </div>
+      <div class="mcard fi" id="w-clouds">
+        <div class="mlabel">Nebulosidade</div>
+        <div class="mval" id="cloudVal">15<span class="munit">%</span></div>
+        <div class="msub">Poucas nuvens</div>
+      </div>
+      <div class="mcard fi" id="w-rain7">
+        <div class="mlabel">Chuva — 7 Dias</div>
+        <div class="mval" id="rainAccVal">12.4<span class="munit">mm</span></div>
+        <div class="msub">Abaixo da média (28 mm)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="p-24h" class="page-content">
+  <div class="sec-head"><h2>Resumo das Próximas 24H</h2></div>
+  <div class="three-col" style="margin-bottom:24px;">
+    <div class="mcard fi">
+      <div class="mlabel">Condição Geral</div>
+      <div class="mval" style="font-size: 19px; margin-top: 4px;">Pancadas à Tarde</div>
+      <div class="msub">Maior risco entre 14h e 18h</div>
+    </div>
+    <div class="mcard fi">
+      <div class="mlabel">Variação de Temperatura</div>
+      <div class="mval" style="display:flex; align-items:baseline; gap:5px;">
+        18° <span style="font-size:12px;color:var(--t2);">a</span> 32°
+      </div>
+      <div class="msub">Sensação térmica máx de 34°C</div>
+    </div>
+    <div class="mcard fi">
+      <div class="mlabel">Acumulado Previsto</div>
+      <div class="mval">15.2<span class="munit">mm</span></div>
+      <div class="msub">70% de chance global de chuva</div>
+    </div>
+  </div>
+
+  <div class="sec-head"><h2>Probabilidade de Chuva (%)</h2></div>
+  <div class="ccart" style="margin-bottom:24px;">
+    <div class="chead">
+      <span class="ctitle">Curva de risco de precipitação (próximas 24h)</span>
+    </div>
+    <canvas id="rainChance24Chart" height="130"></canvas>
+  </div>
+
+  <div class="sec-head"><h2>Previsão Interativa — Próximas Horas</h2></div>
+  <div class="hgrid" id="interactiveHourlyGrid"></div>
+</div>
+
+<div id="p-culturas" class="page-content">
+  <div class="sec-head"><h2>Visão Geral Agronômica</h2></div>
+  <div class="two-col" style="margin-bottom:24px;">
+    <div class="ccart">
+      <div class="chead"><span class="ctitle">Adequação Climática Média (%)</span></div>
+      <div id="cropSuitabilityBars" style="display:flex;align-items:flex-end;height:100px;gap:8px;"></div>
+      <div style="display:flex;justify-content:space-between;margin-top:auto;font-family:var(--mono);font-size:9px;color:var(--t3);" id="cropSuitLabels"></div>
+    </div>
+    <div class="ccart">
+      <div class="chead"><span class="ctitle">Evolução do GDA (Safra Soja)</span></div>
+      <canvas id="gdaChart" height="130"></canvas>
+    </div>
+  </div>
+
+  <div class="sec-head"><h2>Limites Operacionais por Cultura</h2></div>
+  <div class="c-grid" id="cropsGrid"></div>
+</div>
+
+<div id="p-indices" class="page-content">
+  <div class="sec-head"><h2>Monitoramento de Índices</h2></div>
+  <div class="two-col" style="margin-bottom:24px;">
+    <div class="ccart">
+      <div class="chead"><span class="ctitle">Qualidade do Ar (AQI) — 24h</span></div>
+      <canvas id="aqiChart" height="130"></canvas>
+    </div>
+    <div class="ccart">
+      <div class="chead"><span class="ctitle">Índice UV — Curva Diária Estimada</span></div>
+      <canvas id="uvChart" height="130"></canvas>
+    </div>
+  </div>
+
+  <div class="sec-head"><h2>Qualidade de Vida e Rotina</h2></div>
+  <div class="i-grid" id="indicesGrid"></div>
+</div>
+
+<div id="p-hw" class="page-content">
+  <div class="sec-head"><h2>Hardware & Sistema (ESP32)</h2></div>
+  <div class="mgrid" style="margin-bottom:24px;">
+    <div class="mcard fi">
+      <div class="mlabel">Uso de CPU</div>
+      <div class="mval" id="hw-cpu">14<span class="munit">%</span></div>
+      <div class="mbar"><div class="mbar-f" id="bar-cpu" style="width:14%; background:var(--ok)"></div></div>
+      <div class="msub">Freq: 240 MHz</div>
+    </div>
+    <div class="mcard fi">
+      <div class="mlabel">Memória RAM (Heap)</div>
+      <div class="mval" id="hw-ram">124<span class="munit">KB livre</span></div>
+      <div class="mbar"><div class="mbar-f" id="bar-ram" style="width:40%"></div></div>
+      <div class="msub">De 320 KB Total</div>
+      <span class="badge b-ok" style="margin-top:auto">Estável</span>
+    </div>
+    <div class="mcard fi">
+      <div class="mlabel">Temperatura Interna</div>
+      <div class="mval" id="hw-temp">45<span class="munit">°C</span></div>
+      <div class="mbar"><div class="mbar-f" id="bar-itemp" style="width:45%; background:var(--warn)"></div></div>
+      <div class="msub">Chip ESP32</div>
+    </div>
+    <div class="mcard fi">
+      <div class="mlabel">Tempo de Atividade (Uptime)</div>
+      <div class="mval" id="hw-uptime">14<span class="munit">d 6h</span></div>
+      <div class="msub">Último boot: Normal (Power-on)</div>
+      <div class="msub" style="margin-top:4px">Drift RTC: -1.2s</div>
+    </div>
+  </div>
+
+  <div class="sec-head"><h2>Conectividade, Energia e Armazenamento</h2></div>
+  <div class="mgrid" style="margin-bottom:24px;">
+    <div class="mcard fi">
+      <div class="mlabel">Sinal Wi-Fi (RSSI)</div>
+      <div class="mval" id="hw-wifi">-62<span class="munit">dBm</span></div>
+      <div class="mbar"><div class="mbar-f" id="bar-wifi" style="width:80%; background:var(--ok)"></div></div>
+      <div class="msub">SSID: Fazenda_IoT_2.4G</div>
+      <div class="msub" style="margin-top:2px">IP: 192.168.1.104</div>
+    </div>
+    <div class="mcard fi">
+      <div class="mlabel">Bateria do Sistema</div>
+      <div class="mval" id="hw-bat">4.02<span class="munit">V</span></div>
+      <div class="mbar"><div class="mbar-f" id="bar-bat" style="width:85%; background:var(--ok)"></div></div>
+      <div class="msub">Nível Estimado: <span id="hw-bat-pct">85</span>%</div>
+      <span class="badge b-ok" style="margin-top:auto">Descarregando</span>
+    </div>
+    <div class="mcard fi">
+      <div class="mlabel">Painel Solar</div>
+      <div class="mval" id="hw-sol">0.0<span class="munit">V</span></div>
+      <div class="mbar"><div class="mbar-f" id="bar-sol" style="width:0%; background:var(--t3)"></div></div>
+      <div class="msub">Corrente Gerada: 0 mA</div>
+      <span class="badge b-d" style="margin-top:auto; background:var(--t3); color:white">Inativo (Noite/Sombra)</span>
+    </div>
+    <div class="mcard fi">
+      <div class="mlabel">Armazenamento MicroSD</div>
+      <div class="mval">1.2<span class="munit">GB</span></div>
+      <div class="mbar"><div class="mbar-f" style="width:15%; background:var(--ok)"></div></div>
+      <div class="msub">Livre de 8.0 GB Total</div>
+      <div class="msub" style="margin-top:2px">Status SPI: OK</div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="ccart">
+      <div class="chead">
+        <span class="ctitle">Uso de CPU e RAM — Última 1h</span>
+        <div class="legend">
+          <div class="leg-i"><div class="leg-d" style="background:var(--accent)"></div>CPU</div>
+          <div class="leg-i"><div class="leg-d" style="background:var(--t3)"></div>RAM</div>
+        </div>
+      </div>
+      <canvas id="sysChart" height="130"></canvas>
+    </div>
+    <div class="ccart">
+      <div class="chead"><span class="ctitle">Curva de Descarga da Bateria — 24h</span></div>
+      <canvas id="batteryChart" height="130"></canvas>
+    </div>
+  </div>
+</div>
+
+</main>
+<footer>
+  <span>FruisMeteo Sistema · v2.4.1</span>
+  <span id="footerDate"></span>
+  <span>Resolução 1 min · INMET Homologada</span>
+</footer>
+
+<div class="povl" id="pOvl" onclick="closePanel()"></div>
+<div class="cpanel" id="cPanel">
+  <div class="cp-head">
+    <h3>Personalizar Painel</h3>
+    <button class="cp-close" onclick="closePanel()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+  </div>
+  <div class="cp-body" id="cpBody"></div>
+  <div class="cp-foot"><button class="cp-rst" onclick="resetW()">Restaurar Padrão</button></div>
+</div>
+
+<div class="movl" id="mOvl" onclick="closeModal(event)">
+  <div class="dmod" onclick="event.stopPropagation()">
+    <div class="mhead">
+      <h4 id="mTitle">Detalhe</h4>
+      <button class="mclose" onclick="closeModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="mbody" id="mBody"></div>
+  </div>
+</div>
+
+<script>
+// ══ NAVIGATION TABS ══
+function switchTab(tabId, btnEl) {
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.page-content').forEach(page => page.classList.remove('active'));
+  btnEl.classList.add('active');
+  document.getElementById(tabId).classList.add('active');
+  
+  if(tabId === 'p-24h') drawAreaChart('rainChance24Chart', hData.map(d=>d.pop), 0, 100, true, '#2A6B8C');
+  if(tabId === 'p-culturas') drawAreaChart('gdaChart', gdaH, 700, 900, true);
+  if(tabId === 'p-indices') { drawAreaChart('aqiChart', aqiH, 20, 100, true); drawAreaChart('uvChart', uvH, 0, 12, false, '#7A5A10'); }
+  if(tabId === 'p-hw') { drawSysChart(); drawAreaChart('batteryChart', batH, 3.2, 4.3, false, '#3D6B3E'); }
+}
+
+// ══ DATA BASE ══
+const base = {
+  temp: 28, hum: 38, wind: 14, press: 1013, uv: 8, rad: 680,
+  rainChance: 15, rainAcc: 12.4, clouds: 15, aqi: 45, tMinD: 18, tMaxD: 32,
+  hwCpu: 14, hwRam: 124, hwTemp: 45, hwWifi: -62, hwBat: 4.02, hwSol: 0
+};
+
+// ══ CULTURAS (TAB 2) ══
+const CROPS = [
+  { id: 'c_manga', name: 'Manga', tI: [24, 32], hI: [50, 70], tcL: 12, tcH: 38, hc: 85, hcT: 'max', actH: 'Drenagem, evitar geada', actC: 'Irrigação, sombrite, palhada' },
+  { id: 'c_goiaba', name: 'Goiaba', tI: [23, 30], hI: [50, 80], tcL: 15, tcH: 36, hc: 90, hcT: 'max', actH: 'Fungicida, ventilação', actC: 'Cobertura vegetal, irrigação' },
+  { id: 'c_acerola', name: 'Acerola', tI: [25, 32], hI: [60, 80], tcL: 15, tcH: 38, hc: 90, hcT: 'max', actH: 'Reduzir excesso de água', actC: 'Sombrite leve, irrigação' },
+  { id: 'c_uva', name: 'Uva', tI: [15, 30], hI: [40, 70], tcL: 5, tcH: 35, hc: 80, hcT: 'max', actH: 'Controle de fungos', actC: 'Irrigação controlada' },
+  { id: 'c_mamao', name: 'Mamão', tI: [22, 30], hI: [60, 80], tcL: 15, tcH: 36, hc: 90, hcT: 'max', actH: 'Proteção contra frio', actC: 'Microaspersão, palhada' },
+  { id: 'c_banana', name: 'Banana', tI: [26, 30], hI: [70, 90], tcL: 16, tcH: 38, hc: 95, hcT: 'max', actH: 'Quebra-vento', actC: 'Irrigação intensa' },
+  { id: 'c_limao', name: 'Limão', tI: [23, 32], hI: [50, 70], tcL: 10, tcH: 38, hc: 85, hcT: 'max', actH: 'Proteção anti-geada', actC: 'Gotejamento' },
+  { id: 'c_laranja', name: 'Laranja', tI: [22, 32], hI: [50, 70], tcL: 10, tcH: 38, hc: 90, hcT: 'max', actH: 'Controle de fungos', actC: 'Cobertura do solo' }
+];
+
+function buildCrops() {
+  const g = document.getElementById('cropsGrid'); 
+  const cBar = document.getElementById('cropSuitabilityBars');
+  const cLab = document.getElementById('cropSuitLabels');
+  if (!g) return;
+  g.innerHTML = ''; if (cBar) { cBar.innerHTML = ''; cLab.innerHTML = ''; }
+  
+  let topCrops = CROPS.slice(0, 6);
+  
+  CROPS.forEach((c, idx) => {
+    if (wState[c.id] === false) return; 
+    
+    let st = 'Adequado', bd = 'b-ok', rec = 'Monitoramento padrão';
+    const isTempCrit = base.temp < c.tcL || base.temp > c.tcH;
+    const isHumCrit = c.hcT === 'max' ? base.hum > c.hc : base.hum < c.hc;
+    const isTempAtt = base.temp < c.tI[0] || base.temp > c.tI[1];
+    const isHumAtt = base.hum < c.hI[0] || base.hum > c.hI[1];
+
+    if (isTempCrit || isHumCrit) {
+      st = 'Crítico'; bd = 'b-d';
+      rec = isTempCrit && base.temp > c.tcH ? c.actC : c.actH;
+    } else if (isTempAtt || isHumAtt) {
+      st = 'Atenção'; bd = 'b-w';
+      rec = 'Acompanhar variações';
+    }
+
+    const tPct = Math.min(100, Math.max(0, (base.temp / 45) * 100));
+    const hPct = Math.min(100, Math.max(0, (base.hum / 100) * 100));
+    const barColTemp = isTempCrit ? 'var(--danger)' : isTempAtt ? 'var(--warn)' : 'var(--ok)';
+    const barColHum = isHumCrit ? 'var(--danger)' : isHumAtt ? 'var(--warn)' : 'var(--blue)';
+
+    const card = document.createElement('div'); card.className = 'crop-card fi';
+    card.innerHTML = `
+      <div class="crop-head"><span class="crop-name">${c.name}</span><span class="badge ${bd}">${st}</span></div>
+      <div class="crop-stats">
+        <div>
+          <span>Temp: <strong>${Math.round(base.temp)}°C</strong> (Ideal ${c.tI[0]}-${c.tI[1]})</span>
+          <div class="mbar" style="height:3px; margin-top:2px;"><div class="mbar-f" style="width:${tPct}%; background:${barColTemp}"></div></div>
+        </div>
+        <div>
+          <span>Umid: <strong>${Math.round(base.hum)}%</strong> (Ideal ${c.hI[0]}-${c.hI[1]})</span>
+          <div class="mbar" style="height:3px; margin-top:2px;"><div class="mbar-f" style="width:${hPct}%; background:${barColHum}"></div></div>
+        </div>
+      </div>
+      <div class="crop-act"><strong>Ação Sugerida:</strong><br>${rec}</div>
+    `;
+    g.appendChild(card);
+    
+    if (idx < 6 && cBar) {
+      let suitScore = 100;
+      if (isTempCrit) suitScore -= 50; else if (isTempAtt) suitScore -= 20;
+      if (isHumCrit) suitScore -= 50; else if (isHumAtt) suitScore -= 20;
+      suitScore = Math.max(5, suitScore);
+      
+      const w = document.createElement('div');
+      w.style.cssText = 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;height:100%;';
+      const col = suitScore > 75 ? 'var(--ok)' : (suitScore > 40 ? 'var(--warn)' : 'var(--danger)');
+      w.innerHTML = `<span style="font-family:var(--mono);font-size:9px;color:var(--t2);">${suitScore}%</span><div style="width:100%;height:${suitScore}%;background:${col};border-radius:4px 4px 0 0;opacity:0.8;transition:height .3s;"></div>`;
+      cBar.appendChild(w);
+      const lb = document.createElement('span'); lb.textContent = c.name.substring(0,3); cLab.appendChild(lb);
+    }
+  });
+}
+
+// ══ INDICES (TAB 3) ══
+function buildIndices() {
+  const g = document.getElementById('indicesGrid'); if (!g) return;
+  g.innerHTML = '';
+
+  const t = base.temp, h = base.hum, w = base.wind, rc = base.rainChance, ra = base.rainAcc, uv = base.uv, aqi = base.aqi;
+  let idxs = [];
+
+  if (t >= 22 && t <= 32 && rc < 20 && w < 20) idxs.push({n:'Churrasco', v:'Ideal', c:'b-ok', d:'Clima perfeito para área externa.'});
+  else if (rc > 50 || w > 35 || t < 15) idxs.push({n:'Churrasco', v:'Evitar', c:'b-d', d:'Condições adversas pesadas.'});
+  else idxs.push({n:'Churrasco', v:'Tá Valendo', c:'b-w', d:'Possível com pequenas adaptações.'});
+
+  if (h < 60 || t < 18) idxs.push({n:'Mosquitos', v:'Baixo', c:'b-ok', d:'Baixa atividade de vetores.'});
+  else if (h > 75 && ra > 5 && t >= 24) idxs.push({n:'Mosquitos', v:'Alto', c:'b-d', d:'Proliferação favorecida pelo clima.'});
+  else idxs.push({n:'Mosquitos', v:'Moderado', c:'b-w', d:'Atividade vetorial intermediária.'});
+
+  if (h < 55) idxs.push({n:'Frizz Capilar', v:'Baixo', c:'b-ok', d:'Umidade amigável aos fios.'});
+  else if (h > 75 || rc > 60) idxs.push({n:'Frizz Capilar', v:'Alto', c:'b-d', d:'Carga extrema de umidade.'});
+  else idxs.push({n:'Frizz Capilar', v:'Moderado', c:'b-w', d:'Variação leve na umidade.'});
+
+  if (h > 55) idxs.push({n:'Ressecamento da Pele', v:'Nenhum', c:'b-ok', d:'Hidratação natural do ar mantida.'});
+  else if (h < 35 || (w > 20 && t < 18)) idxs.push({n:'Ressecamento da Pele', v:'Alto', c:'b-d', d:'Exposição a tempo seco severo.'});
+  else idxs.push({n:'Ressecamento da Pele', v:'Moderado', c:'b-w', d:'Recomendado uso de creme leve.'});
+
+  if (t < 15 && h > 70 && rc > 30) idxs.push({n:'Gripe e Resfriado', v:'Alto', c:'b-d', d:'Tempo frio e úmido constante.'});
+  else if ((base.tMaxD - base.tMinD) > 8 || t < 20) idxs.push({n:'Gripe e Resfriado', v:'Moderado', c:'b-w', d:'Atenção com a amplitude térmica.'});
+  else idxs.push({n:'Gripe e Resfriado', v:'Baixo', c:'b-ok', d:'Clima termicamente estável.'});
+
+  let uvr = {v:'Baixo',c:'b-ok'};
+  if(uv>=3 && uv<=5) uvr={v:'Moderado',c:'b-w'};
+  else if(uv>=6 && uv<=7) uvr={v:'Alto',c:'b-w'};
+  else if(uv>=8 && uv<=10) uvr={v:'Muito Alto',c:'b-d'};
+  else if(uv>=11) uvr={v:'Extremo',c:'b-p'};
+  idxs.push({n:'Índice UV', v:uvr.v, c:uvr.c, d:`Medição instantânea: ${Math.round(uv)}.`});
+
+  if (uv < 2) idxs.push({n:'Síntese de Vitamina D', v:'Baixa', c:'b-d', d:'Radiação insuficiente.'});
+  else if (uv >= 6 && uv <= 8) idxs.push({n:'Síntese de Vitamina D', v:'Boa', c:'b-ok', d:'Janela ideal de exposição.'});
+  else if (uv > 8) idxs.push({n:'Síntese de Vitamina D', v:'Excesso', c:'b-w', d:'Risco de dano à pele sobrepõe.'});
+  else idxs.push({n:'Síntese de Vitamina D', v:'Moderada', c:'b-w', d:'Síntese lenta.'});
+
+  let aqiR = {v:'Bom',c:'b-ok'};
+  if(aqi>50 && aqi<=100) aqiR={v:'Moderado',c:'b-w'};
+  else if(aqi>100 && aqi<=150) aqiR={v:'Ruim',c:'b-w'};
+  else if(aqi>150 && aqi<=200) aqiR={v:'Muito Ruim',c:'b-d'};
+  else if(aqi>200) aqiR={v:'Perigoso',c:'b-p'};
+  idxs.push({n:'Qualidade do Ar', v:aqiR.v, c:aqiR.c, d:`Índice AQI atual: ${Math.round(aqi)}.`});
+
+  idxs.forEach(i => {
+    const card = document.createElement('div'); card.className = 'idx-card fi';
+    card.innerHTML = `<span class="idx-name">${i.n}</span><span class="idx-val"><span class="badge ${i.c}" style="margin:0;">${i.v}</span></span><span class="idx-desc">${i.d}</span>`;
+    g.appendChild(card);
+  });
+}
+
+// ══ WIDGETS & CUSTOMIZATION ══
+const WIDGETS=[
+  {id:'w-hero',       label:'Temperatura Principal', group:'Pág 1: Visão Geral'},
+  {id:'w-metrics',    label:'Cards Meteorológicos',  group:'Pág 1: Visão Geral'},
+  {id:'w-charts',     label:'Gráficos',              group:'Pág 1: Visão Geral'},
+  {id:'w-forecast',   label:'Previsão 7 Dias',       group:'Pág 1: Visão Geral'},
+  {id:'w-agro',       label:'Dados Agronômicos',     group:'Pág 1: Agronomia'},
+  {id:'w-soil-temp',  label:'Temp. do Solo',         group:'Pág 1: Agronomia'},
+  {id:'w-soil-moisture',label:'Umidade do Solo',     group:'Pág 1: Agronomia'},
+  {id:'w-eto',        label:'Evapotranspiração',     group:'Pág 1: Agronomia'},
+  {id:'w-gda',        label:'Graus-Dia Acumulados',  group:'Pág 1: Agronomia'},
+  {id:'w-extras',     label:'Extras (Vis/Neb/Chuva)',group:'Pág 1: Extras'},
+];
+let wState={};
+try{const s=localStorage.getItem('agro_w');if(s)wState=JSON.parse(s);}catch(e){}
+function saveW(){try{localStorage.setItem('agro_w',JSON.stringify(wState));}catch(e){}}
+
+function applyW(){
+  WIDGETS.filter(w=>w.id.startsWith('w-')).forEach(w=>{
+    const el=document.getElementById(w.id);if(!el)return;
+    const vis=wState[w.id]!==false;
+    if(vis){el.classList.remove('hidden');el.style.maxHeight=el.scrollHeight+400+'px';}
+    else{el.style.maxHeight=el.scrollHeight+'px';requestAnimationFrame(()=>el.classList.add('hidden'));}
+  });
+  buildCrops();
+}
+
+function buildPanel(){
+  const b=document.getElementById('cpBody');b.innerHTML='';
+  const groups=[...new Set(WIDGETS.map(w=>w.group))];
+  groups.forEach(g=>{
+    const lbl=document.createElement('div');lbl.className='cp-sect';lbl.textContent=g;b.appendChild(lbl);
+    WIDGETS.filter(w=>w.group===g).forEach(w=>{
+      const row=document.createElement('div');row.className='tog-row';
+      const vis=wState[w.id]!==false;
+      row.innerHTML=`<span class="tog-name">${w.label}</span>
+        <label class="tog-sw"><input type="checkbox" ${vis?'checked':''} onchange="toggleW('${w.id}',this.checked)"><div class="tog-tr"></div><div class="tog-kn"></div></label>`;
+      b.appendChild(row);
+    });
+  });
+}
+function toggleW(id,v){wState[id]=v;saveW();applyW();}
+function openPanel(){buildPanel();document.getElementById('cPanel').classList.add('open');document.getElementById('pOvl').classList.add('open');document.getElementById('btnC').classList.add('active');}
+function closePanel(){document.getElementById('cPanel').classList.remove('open');document.getElementById('pOvl').classList.remove('open');document.getElementById('btnC').classList.remove('active');}
+function resetW(){wState={};saveW();applyW();buildPanel();}
+applyW();
+
+// ══ CLOCK ══
+function updateClock(){
+  const n=new Date();
+  document.getElementById('clock').textContent=n.toLocaleTimeString('pt-BR');
+  document.getElementById('footerDate').textContent=n.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+}
+updateClock();setInterval(updateClock,1000);
+
+// ══ LIVE DATA ══
+function rnd(v,d){return +(v+(Math.random()-.5)*2*d).toFixed(1);}
+const dirs=['N','NE','NE','E','SE','S','SW','W','NW'];let dI=1;
+function updateData(){
+  base.temp=Math.min(42,Math.max(-5,rnd(base.temp,.25)));
+  base.hum=Math.min(100,Math.max(5,rnd(base.hum,.8)));
+  base.wind=Math.max(0,rnd(base.wind,.7));
+  base.press=rnd(base.press,.35);
+  base.uv=Math.min(11,Math.max(0,rnd(base.uv,.12)));
+  base.rad=Math.max(0,rnd(base.rad,7));
+  base.aqi=Math.max(0,rnd(base.aqi,2));
+  if(Math.random()<.04)dI=(dI+1)%dirs.length;
+  
+  base.hwCpu = Math.min(100, Math.max(1, rnd(base.hwCpu, 4)));
+  base.hwRam = Math.min(200, Math.max(10, rnd(base.hwRam, 2)));
+  base.hwTemp = Math.min(85, Math.max(30, rnd(base.hwTemp, 0.5)));
+  base.hwWifi = Math.min(-30, Math.max(-95, rnd(base.hwWifi, 1)));
+  base.hwBat = Math.min(4.2, Math.max(3.2, rnd(base.hwBat, 0.01)));
+
+  const dp=Math.round(base.temp-(100-base.hum)/5);
+  const vpd=Math.max(0, +((Math.exp(17.27*base.temp/(base.temp+237.3))*0.6108) * (1 - base.hum/100)).toFixed(1));
+  
+  const $=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  $('tempVal',Math.round(base.temp));$('feelsLike',Math.round(base.temp+3)+'°C');
+  $('humVal',Math.round(base.hum));$('windVal',Math.round(base.wind));
+  $('windDir',dirs[dI]);$('pressVal',Math.round(base.press));$('uvVal',Math.round(base.uv));
+  $('dewPoint',dp+'°C');$('gustVal',Math.round(base.wind*1.55));$('radVal',Math.round(base.rad));
+  $('vpdVal', vpd);
+
+  $('hw-cpu', Math.round(base.hwCpu));
+  $('hw-ram', Math.round(base.hwRam));
+  $('hw-temp', Math.round(base.hwTemp));
+  $('hw-wifi', Math.round(base.hwWifi));
+  $('hw-bat', base.hwBat.toFixed(2));
+  
+  const batPct = Math.round(((base.hwBat - 3.2)/(4.2 - 3.2))*100);
+  $('hw-bat-pct', batPct);
+
+  const $h=(id,v)=>{const e=document.getElementById(id);if(e)e.innerHTML=v;};
+  $h('m-hum',Math.round(base.hum)+'<span class="munit">%</span>');
+  $h('m-wind',Math.round(base.wind)+'<span class="munit">km/h</span>');
+  $h('m-press',Math.round(base.press)+'<span class="munit">hPa</span>');
+  $h('m-uv',Math.round(base.uv)+'<span class="munit">/ 11</span>');
+
+  const $b=(id,p,c)=>{const e=document.getElementById(id);if(e){e.style.width=p+'%'; if(c) e.style.background=c;}};
+  
+  let humC = base.hum < 40 ? 'var(--danger)' : (base.hum > 80 ? 'var(--blue)' : 'var(--ok)');
+  $b('bar-hum',Math.round(base.hum), humC);
+  $b('bar-wind',Math.min(100,Math.round(base.wind/50*100)));
+  $b('bar-press',Math.round((base.press-960)/(1060-960)*100));
+  let uvC = base.uv > 8 ? 'var(--danger)' : (base.uv > 5 ? 'var(--warn)' : 'var(--ok)');
+  $b('bar-uv',Math.round(base.uv/11*100), uvC);
+
+  $b('bar-cpu', base.hwCpu, base.hwCpu > 80 ? 'var(--danger)' : 'var(--ok)');
+  $b('bar-ram', Math.round((base.hwRam/320)*100), base.hwRam < 40 ? 'var(--danger)' : 'var(--ok)');
+  $b('bar-itemp', Math.round((base.hwTemp/85)*100), base.hwTemp > 65 ? 'var(--danger)' : 'var(--warn)');
+  $b('bar-wifi', Math.round((100 - Math.abs(base.hwWifi))), base.hwWifi < -80 ? 'var(--danger)' : 'var(--ok)');
+  $b('bar-bat', batPct, batPct < 20 ? 'var(--danger)' : 'var(--ok)');
+
+  buildCrops();
+  buildIndices();
+}
+setInterval(updateData,4000);
+
+// ══ GENERIC CHART SYSTEM ══
+function drawAreaChart(canvasId, dataArr, minY, maxY, fill=true, color='#B8874E') {
+  const cv=document.getElementById(canvasId);if(!cv)return;
+  const W=cv.offsetWidth,H=130;
+  cv.width=W*devicePixelRatio;cv.height=H*devicePixelRatio;
+  const ctx=cv.getContext('2d');ctx.scale(devicePixelRatio,devicePixelRatio);
+  
+  const toY=v=>H-18-((v-minY)/(maxY-minY))*(H-28);
+  const toX=i=>30+(i/(dataArr.length-1))*(W-40);
+  
+  ctx.strokeStyle='rgba(26,22,18,0.06)';ctx.lineWidth=0.5;
+  for(let g=0;g<=4;g++){const y=8+(g/4)*(H-26);ctx.beginPath();ctx.moveTo(30,y);ctx.lineTo(W-10,y);ctx.stroke();}
+  
+  ctx.fillStyle='#B0A497';ctx.font='9px DM Mono,monospace';ctx.textAlign='right';
+  for(let g=0;g<=4;g++){const v=maxY-g*(maxY-minY)/4;ctx.fillText(v.toFixed(0),26,8+(g/4)*(H-26)+3);}
+  
+  if(fill) {
+    ctx.beginPath();
+    dataArr.forEach((t,i)=>{i===0?ctx.moveTo(toX(i),toY(t)):ctx.lineTo(toX(i),toY(t));});
+    ctx.lineTo(toX(dataArr.length-1),H-18);ctx.lineTo(toX(0),H-18);ctx.closePath();
+    const g=ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0, color === '#B8874E' ? 'rgba(184,135,78,0.15)' : 'rgba(26,22,18,0.1)');
+    g.addColorStop(1, 'rgba(184,135,78,0)');
+    ctx.fillStyle=g;ctx.fill();
+  }
+  
+  ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=1.6;
+  dataArr.forEach((t,i)=>{i===0?ctx.moveTo(toX(i),toY(t)):ctx.lineTo(toX(i),toY(t));});ctx.stroke();
+  
+  ctx.fillStyle='#B0A497';ctx.textAlign='center';
+  const steps = 5;
+  for(let i=0; i<steps; i++){
+     let idx = Math.floor(i * (dataArr.length-1)/(steps-1));
+     ctx.fillText(idx+'h', toX(idx), H-3);
+  }
+}
+
+// ══ TEMP CHART ══
+const tH=[],dH=[];
+for(let i=0;i<25;i++){const t=18+12*Math.sin((i-6)*Math.PI/12)+(Math.random()-.5)*1.5;tH.push(+t.toFixed(1));dH.push(+(t-14-Math.random()*2).toFixed(1));}
+
+// Mock Data Arrays
+const gdaH=[], aqiH=[], uvH=[], batH=[], cpuH=[], ramH=[];
+let gBase=750, bBase=4.2;
+for(let i=0;i<25;i++){
+  gdaH.push(gBase); gBase+=Math.random()*8;
+  aqiH.push(40+Math.sin(i)*15+Math.random()*10);
+  uvH.push(Math.max(0, 10*Math.sin((i-6)*Math.PI/12)+Math.random()));
+  batH.push(bBase); bBase-=0.01 + Math.random()*0.02;
+  cpuH.push(10+Math.random()*25);
+  ramH.push(100+Math.random()*10);
+}
+
+// ══ 24H HOURLY DATA & INTERACTIVE GRID ══
+const hData = [];
+const currentHour = new Date().getHours();
+for(let i=0; i<=24; i++) {
+  let h = (currentHour + i) % 24;
+  let temp = Math.round(18 + 12*Math.sin((h-6)*Math.PI/12));
+  let pop = 0; 
+  if(h >= 14 && h <= 18) pop = 60 + Math.random()*30;
+  else if (h >= 19 && h <= 21) pop = 20 + Math.random()*20;
+  else pop = Math.random()*10;
+  
+  let ic = pop > 50 ? 'rain' : (pop > 20 || (h>6 && h<18 && Math.random()>0.5) ? 'cloud' : 'sun');
+  if(h<6 || h>18) if(ic==='sun') ic='cloud'; 
+  
+  hData.push({ hour: String(h).padStart(2,'0')+'h', temp: temp, pop: Math.round(pop), ic: ic });
+}
+
+function buildInteractiveHourlyGrid() {
+  const g = document.getElementById('interactiveHourlyGrid');
+  if(!g) return;
+  g.innerHTML = '';
+  // Aqui os alvos exatos que você pediu para a página de 24h
+  const targetOffsets = [1, 2, 4, 6, 12];
+  
+  targetOffsets.forEach(offset => {
+     const d = hData[offset];
+     if(!d) return;
+     const el = document.createElement('div');
+     el.className = 'hday'; // Usa os mesmos estilos base do layout original
+     el.style.cursor = 'pointer'; 
+     el.onclick = () => openModal('hourly', offset);
+     el.innerHTML = `
+        <div class="fdow">+${offset}h</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--t3);margin-bottom:7px">${d.hour}</div>
+        <div class="ficon">${ico(d.ic)}</div>
+        <div class="fhi" style="font-size:15px">${d.temp}°</div>
+        <div class="fpct" style="color:var(--blue); font-weight:600; margin-top:8px">${d.pop}%</div>
+     `;
+     g.appendChild(el);
+  });
+}
+
+function drawTempChart(){
+  const cv=document.getElementById('tempChart');if(!cv)return;
+  const W=cv.offsetWidth,H=130;
+  cv.width=W*devicePixelRatio;cv.height=H*devicePixelRatio;
+  const ctx=cv.getContext('2d');ctx.scale(devicePixelRatio,devicePixelRatio);
+  const minT=Math.min(...tH,...dH)-2,maxT=Math.max(...tH,...dH)+2;
+  const toY=v=>H-18-((v-minT)/(maxT-minT))*(H-28);
+  const toX=i=>30+(i/24)*(W-40);
+  
+  ctx.strokeStyle='rgba(26,22,18,0.06)';ctx.lineWidth=0.5;
+  for(let g=0;g<=4;g++){const y=8+(g/4)*(H-26);ctx.beginPath();ctx.moveTo(30,y);ctx.lineTo(W-10,y);ctx.stroke();}
+  ctx.fillStyle='#B0A497';ctx.font='9px DM Mono,monospace';ctx.textAlign='right';
+  for(let g=0;g<=4;g++){const v=maxT-g*(maxT-minT)/4;ctx.fillText(Math.round(v)+'°',26,8+(g/4)*(H-26)+3);}
+  
+  ctx.beginPath();ctx.strokeStyle='#B0A497';ctx.lineWidth=1;ctx.setLineDash([3,4]);
+  dH.forEach((d,i)=>{i===0?ctx.moveTo(toX(i),toY(d)):ctx.lineTo(toX(i),toY(d));});
+  ctx.stroke();ctx.setLineDash([]);
+  
+  ctx.beginPath();tH.forEach((t,i)=>{i===0?ctx.moveTo(toX(i),toY(t)):ctx.lineTo(toX(i),toY(t));});
+  ctx.lineTo(toX(24),H-18);ctx.lineTo(toX(0),H-18);ctx.closePath();
+  const gr=ctx.createLinearGradient(0,0,0,H);gr.addColorStop(0,'rgba(184,135,78,0.15)');gr.addColorStop(1,'rgba(184,135,78,0)');
+  ctx.fillStyle=gr;ctx.fill();
+  
+  ctx.beginPath();ctx.strokeStyle='#B8874E';ctx.lineWidth=1.6;
+  tH.forEach((t,i)=>{i===0?ctx.moveTo(toX(i),toY(t)):ctx.lineTo(toX(i),toY(t));});ctx.stroke();
+  
+  ctx.fillStyle='#B0A497';ctx.textAlign='center';
+  [0,6,12,18,24].forEach(h=>ctx.fillText(String(h%24).padStart(2,'0')+'h',toX(h),H-3));
+}
+
+function drawSysChart(){
+  const cv=document.getElementById('sysChart');if(!cv)return;
+  const W=cv.offsetWidth,H=130;
+  cv.width=W*devicePixelRatio;cv.height=H*devicePixelRatio;
+  const ctx=cv.getContext('2d');ctx.scale(devicePixelRatio,devicePixelRatio);
+  const toY=v=>H-18-(v/150)*(H-28);
+  const toX=i=>30+(i/24)*(W-40);
+  
+  ctx.strokeStyle='rgba(26,22,18,0.06)';ctx.lineWidth=0.5;
+  for(let g=0;g<=4;g++){const y=8+(g/4)*(H-26);ctx.beginPath();ctx.moveTo(30,y);ctx.lineTo(W-10,y);ctx.stroke();}
+  ctx.fillStyle='#B0A497';ctx.font='9px DM Mono,monospace';ctx.textAlign='right';
+  for(let g=0;g<=4;g++){const v=150-g*(150)/4;ctx.fillText(Math.round(v),26,8+(g/4)*(H-26)+3);}
+
+  ctx.beginPath();ctx.strokeStyle='#B0A497';ctx.lineWidth=1.5;
+  ramH.forEach((d,i)=>{i===0?ctx.moveTo(toX(i),toY(d)):ctx.lineTo(toX(i),toY(d));});
+  ctx.stroke();
+
+  ctx.beginPath();ctx.strokeStyle='#B8874E';ctx.lineWidth=1.5;
+  cpuH.forEach((d,i)=>{i===0?ctx.moveTo(toX(i),toY(d)):ctx.lineTo(toX(i),toY(d));});
+  ctx.stroke();
+
+  ctx.fillStyle='#B0A497';ctx.textAlign='center';
+  [0,15,30,45,60].forEach((m, i)=>{ let xIdx=Math.floor(i*24/4); ctx.fillText(m+'m',toX(xIdx),H-3); });
+}
+
+// ══ RAIN BARS ══
+const rainData=[0,2.4,8.8,1.2,0,0,0],rainDays=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+function buildRainBars(){
+  const max=Math.max(...rainData,1);
+  const c=document.getElementById('rainBars'),l=document.getElementById('rainLabels');
+  if(!c||!l)return;c.innerHTML='';l.innerHTML='';
+  rainData.forEach((v,i)=>{
+    const w=document.createElement('div');
+    w.style.cssText='flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;height:100%;';
+    w.innerHTML=`<span style="font-family:var(--mono);font-size:9px;color:var(--t3);">${v>0?v.toFixed(1)+'mm':'—'}</span><div style="width:100%;height:${Math.max((v/max)*100,2)}%;background:var(--blueBg);border-radius:4px 4px 0 0;border:1px solid rgba(42,107,140,.22);transition:background .2s;cursor:default;" onmouseover="this.style.background='var(--blue)'" onmouseout="this.style.background='var(--blueBg)'"></div>`;
+    c.appendChild(w);const lb=document.createElement('span');lb.textContent=rainDays[i];l.appendChild(lb);
+  });
+}
+
+// ══ FORECAST ══
+const fd=[
+  {dow:'Hoje',hi:32,lo:18,rain:15, ic:'sun'},
+  {dow:'Seg', hi:30,lo:17,rain:10,ic:'cloud'},
+  {dow:'Ter', hi:26,lo:16,rain:60,ic:'rain'},
+  {dow:'Qua', hi:24,lo:15,rain:40,ic:'rain'},
+  {dow:'Qui', hi:28,lo:16,rain:15,ic:'cloud'},
+  {dow:'Sex', hi:31,lo:18,rain:5, ic:'sun'},
+  {dow:'Sáb', hi:33,lo:19,rain:5, ic:'sun'},
+];
+const condDesc={sun:'Ensolarado',cloud:'Parcialmente Nublado',rain:'Chuvas / Pancadas'};
+function ico(t){
+  if(t==='sun')return`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>`;
+  if(t==='cloud')return`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z"/></svg>`;
+  return`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 17.58A5 5 0 0018 8h-1.26A8 8 0 104 16.25"/><line x1="8" y1="19" x2="8" y2="21"/><line x1="8" y1="13" x2="8" y2="15"/><line x1="16" y1="19" x2="16" y2="21"/><line x1="16" y1="13" x2="16" y2="15"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="12" y1="15" x2="12" y2="17"/></svg>`;
+}
+function buildForecast(){
+  const g=document.getElementById('forecastGrid');if(!g)return;g.innerHTML='';
+  fd.forEach((d,i)=>{
+    const el=document.createElement('div');
+    el.className='fday'+(i===0?' today':'');
+    el.onclick=()=>openModal('forecast',i);
+    el.innerHTML=`<div class="fdow">${d.dow}</div><div class="ficon">${ico(d.ic)}</div><div class="fhi">${d.hi}°</div><div class="flo">${d.lo}°</div><div class="frbar"><div class="frfill" style="width:${d.rain}%"></div></div><div class="fpct">${d.rain}%</div>`;
+    g.appendChild(el);
+  });
+}
+
+// ══ MODAL ══
+const MODALS={
+  temp:{t:'Temperatura do Ar',r:()=>`<div style="display:flex;align-items:baseline;gap:4px;"><span class="mbig">${Math.round(base.temp)}</span><span class="mbig-u">°C</span></div><div class="mrows"><div class="mrow"><span class="mrow-k">Sensação térmica</span><span class="mrow-v">${Math.round(base.temp+3)}°C</span></div><div class="mrow"><span class="mrow-k">Ponto de orvalho</span><span class="mrow-v">${Math.round(base.temp-(100-base.hum)/5)}°C</span></div><div class="mrow"><span class="mrow-k">Mínima do dia</span><span class="mrow-v">18°C</span></div><div class="mrow"><span class="mrow-k">Máxima do dia</span><span class="mrow-v">32°C</span></div><div class="mrow"><span class="mrow-k">Média 7 dias</span><span class="mrow-v">24°C</span></div></div>`},
+  hum:{t:'Umidade Relativa do Ar',r:()=>`<div style="display:flex;align-items:baseline;gap:4px;"><span class="mbig">${Math.round(base.hum)}</span><span class="mbig-u">%</span></div><div class="mrows"><div class="mrow"><span class="mrow-k">Status</span><span class="mrow-v" style="color:var(--danger)">Crítico — abaixo de 40%</span></div><div class="mrow"><span class="mrow-k">Ponto de orvalho</span><span class="mrow-v">${Math.round(base.temp-(100-base.hum)/5)}°C</span></div><div class="mrow"><span class="mrow-k">Mín. do dia</span><span class="mrow-v">35%</span></div><div class="mrow"><span class="mrow-k">Máx. do dia</span><span class="mrow-v">62%</span></div><div class="mrow"><span class="mrow-k">Recomendação</span><span class="mrow-v">Irrigar culturas sensíveis</span></div></div>`},
+  wind:{t:'Vento',r:()=>`<div style="display:flex;align-items:baseline;gap:4px;"><span class="mbig">${Math.round(base.wind)}</span><span class="mbig-u">km/h</span></div><div class="mrows"><div class="mrow"><span class="mrow-k">Direção</span><span class="mrow-v">Nordeste (${dirs[dI]})</span></div><div class="mrow"><span class="mrow-k">Rajada máxima</span><span class="mrow-v">${Math.round(base.wind*1.55)} km/h</span></div><div class="mrow"><span class="mrow-k">Escala Beaufort</span><span class="mrow-v">3 — Brisa fraca</span></div><div class="mrow"><span class="mrow-k">Máxima do dia</span><span class="mrow-v">28 km/h</span></div></div>`},
+  press:{t:'Pressão Atmosférica',r:()=>`<div style="display:flex;align-items:baseline;gap:4px;"><span class="mbig">${Math.round(base.press)}</span><span class="mbig-u">hPa</span></div><div class="mrows"><div class="mrow"><span class="mrow-k">Tendência</span><span class="mrow-v">→ Estável</span></div><div class="mrow"><span class="mrow-k">Altitude estimada</span><span class="mrow-v">~860 m</span></div><div class="mrow"><span class="mrow-k">Previsão implícita</span><span class="mrow-v">Tempo estável</span></div><div class="mrow"><span class="mrow-k">Variação (3h)</span><span class="mrow-v">−0.8 hPa</span></div></div>`},
+  uv:{t:'Radiação Solar & UV',r:()=>`<div style="display:flex;align-items:baseline;gap:4px;"><span class="mbig">${Math.round(base.uv)}</span><span class="mbig-u">/ 11</span></div><div class="mrows"><div class="mrow"><span class="mrow-k">Categoria</span><span class="mrow-v" style="color:var(--warn)">Alto</span></div><div class="mrow"><span class="mrow-k">Radiação solar</span><span class="mrow-v">${Math.round(base.rad)} W/m²</span></div><div class="mrow"><span class="mrow-k">Dose diária acumulada</span><span class="mrow-v">14.2 J/cm²</span></div><div class="mrow"><span class="mrow-k">Pico hoje</span><span class="mrow-v">10.5 às 12h30</span></div><div class="mrow"><span class="mrow-k">Horas de sol</span><span class="mrow-v">5h 42 min</span></div></div>`},
+  rain:{t:'Precipitação',r:()=>`<div style="display:flex;align-items:baseline;gap:4px;"><span class="mbig">0.0</span><span class="mbig-u">mm hoje</span></div><div class="mrows"><div class="mrow"><span class="mrow-k">Intensidade atual</span><span class="mrow-v">Sem chuva</span></div><div class="mrow"><span class="mrow-k">Última chuva</span><span class="mrow-v">há 2 dias · 8.8 mm</span></div><div class="mrow"><span class="mrow-k">Total 7 dias</span><span class="mrow-v">12.4 mm</span></div><div class="mrow"><span class="mrow-k">Total 30 dias</span><span class="mrow-v">41.2 mm</span></div><div class="mrow"><span class="mrow-k">Média histórica (mês)</span><span class="mrow-v">68.0 mm</span></div></div>`},
+  soilTemp:{t:'Temperatura do Solo',r:()=>`<div style="display:flex;align-items:baseline;gap:4px;"><span class="mbig">24</span><span class="mbig-u">°C</span></div><div class="mrows"><div class="mrow"><span class="mrow-k">10 cm</span><span class="mrow-v">24°C</span></div><div class="mrow"><span class="mrow-k">30 cm</span><span class="mrow-v">21°C</span></div><div class="mrow"><span class="mrow-k">60 cm</span><span class="mrow-v">18°C</span></div><div class="mrow"><span class="mrow-k">Faixa ideal germinação</span><span class="mrow-v">20–28°C ✓</span></div></div>`},
+  soilMoist:{t:'Umidade do Solo',r:()=>`<div style="display:flex;align-items:baseline;gap:4px;"><span class="mbig">42</span><span class="mbig-u">%</span></div><div class="mrows"><div class="mrow"><span class="mrow-k">Estado atual</span><span class="mrow-v">Úmido</span></div><div class="mrow"><span class="mrow-k">Capacidade de campo</span><span class="mrow-v">38%</span></div><div class="mrow"><span class="mrow-k">Ponto de murcha</span><span class="mrow-v">18%</span></div><div class="mrow"><span class="mrow-k">Irrigar abaixo de</span><span class="mrow-v">28%</span></div></div>`},
+  eto:{t:'Evapotranspiração (ETo)',r:()=>`<div style="display:flex;align-items:baseline;gap:4px;"><span class="mbig">5.2</span><span class="mbig-u">mm/dia</span></div><div class="mrows"><div class="mrow"><span class="mrow-k">Significado simples</span><span class="mrow-v">Água que o campo perde/dia</span></div><div class="mrow"><span class="mrow-k">ETc (soja safra)</span><span class="mrow-v">7.1 mm/dia</span></div><div class="mrow"><span class="mrow-k">Repor com irrigação</span><span class="mrow-v">7.1 mm</span></div><div class="mrow"><span class="mrow-k">Acumulado 7 dias</span><span class="mrow-v">36.4 mm</span></div><div class="mrow"><span class="mrow-k">Déficit hídrico</span><span class="mrow-v">24.0 mm</span></div></div>`},
+  gda:{t:'Graus-Dia Acumulados',r:()=>`<div style="display:flex;align-items:baseline;gap:4px;"><span class="mbig">842</span><span class="mbig-u">GDA</span></div><div class="mrows"><div class="mrow"><span class="mrow-k">Significado simples</span><span class="mrow-v">Calor acumulado pela lavoura</span></div><div class="mrow"><span class="mrow-k">Cultura</span><span class="mrow-v">Soja Safra 24/25</span></div><div class="mrow"><span class="mrow-k">Fase atual</span><span class="mrow-v">R3 — Início de formação</span></div><div class="mrow"><span class="mrow-k">Total esperado no ciclo</span><span class="mrow-v">~1.600 GDA</span></div><div class="mrow"><span class="mrow-k">Progresso</span><span class="mrow-v">52%</span></div></div>`},
+};
+
+function openModal(type,idx){
+  const ov=document.getElementById('mOvl'),ti=document.getElementById('mTitle'),bo=document.getElementById('mBody');
+  
+  if (type==='forecast') {
+    const d=fd[idx];
+    ti.textContent=d.dow+' — Previsão';
+    bo.innerHTML=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div style="width:32px;height:32px;opacity:.45;">${ico(d.ic)}</div><span style="font-size:13px;color:var(--t2);">${condDesc[d.ic]}</span></div><div class="mrows"><div class="mrow"><span class="mrow-k">Temperatura máxima</span><span class="mrow-v">${d.hi}°C</span></div><div class="mrow"><span class="mrow-k">Temperatura mínima</span><span class="mrow-v">${d.lo}°C</span></div><div class="mrow"><span class="mrow-k">Probabilidade de chuva</span><span class="mrow-v">${d.rain}%</span></div><div class="mrow"><span class="mrow-k">Chuva estimada</span><span class="mrow-v">${d.rain>30?(d.rain/10).toFixed(1):'< 2'} mm</span></div></div>`;
+  
+  } else if (type === 'hourly') {
+    // Nova lógica para exibir previsões interativas das próximas horas
+    const d = hData[idx];
+    ti.textContent = `Previsão: Daqui a ${idx}h (${d.hour})`;
+    bo.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <div style="width:32px;height:32px;opacity:.45;">${ico(d.ic)}</div>
+        <span style="font-size:13px;color:var(--text);font-weight:600;">${condDesc[d.ic] || 'Condição Variável'}</span>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:4px;margin-bottom:14px;">
+        <span class="mbig">${d.temp}</span><span class="mbig-u">°C Estimado</span>
+      </div>
+      <div class="mrows">
+        <div class="mrow"><span class="mrow-k">Chance de Chuva</span><span class="mrow-v">${d.pop}%</span></div>
+        <div class="mrow"><span class="mrow-k">Volume Previsto</span><span class="mrow-v">${d.pop > 20 ? (d.pop/15).toFixed(1) : '0.0'} mm</span></div>
+        <div class="mrow"><span class="mrow-k">Vento Estimado</span><span class="mrow-v">~${Math.round(base.wind + (Math.random()*6 - 3))} km/h</span></div>
+      </div>
+    `;
+  
+  } else {
+    const c=MODALS[type];if(!c)return;
+    ti.textContent=c.t;bo.innerHTML=c.r();
+  }
+  
+  ov.classList.add('open');
+}
+
+function closeModal(e){
+  if(!e||e.target===document.getElementById('mOvl')||e.currentTarget.tagName==='BUTTON')
+    document.getElementById('mOvl').classList.remove('open');
+}
+
+function renderCharts() {
+  drawTempChart();
+  buildRainBars();
+  drawAreaChart('gdaChart', gdaH, 700, 900, true);
+  drawAreaChart('aqiChart', aqiH, 20, 100, true);
+  drawAreaChart('uvChart', uvH, 0, 12, false, '#7A5A10');
+  drawAreaChart('batteryChart', batH, 3.2, 4.3, false, '#3D6B3E');
+  drawSysChart();
+  // Se estivermos na aba de 24h, redesenha o gráfico
+  if(document.getElementById('p-24h').classList.contains('active')) {
+    drawAreaChart('rainChance24Chart', hData.map(d=>d.pop), 0, 100, true, '#2A6B8C');
+  }
+}
+
+// ══ INIT ══
+window.addEventListener('load',()=>{ 
+  buildForecast();
+  buildInteractiveHourlyGrid();
+  buildCrops(); 
+  buildIndices(); 
+  renderCharts();
+});
+window.addEventListener('resize', renderCharts);
+</script>
+</body>
+</html>
